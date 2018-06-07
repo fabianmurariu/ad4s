@@ -19,13 +19,16 @@ object Op {
   def map[L <: HList](l: L, f: Poly)(implicit mapper: Mapper[f.type, L]): mapper.Out = mapper(l)
 
   private[ad4s] def op1PloyMap[In <: HList, A: Kernel](a: A, f: Poly1)
-                                                           (implicit M: Mapper[f.type, In]): Op[In, A] = new Op[In, A] {
+                                                      (implicit M: Mapper[f.type, In]): Op[In, A] = new Op[In, A] {
     type Out = Mapper[f.type, In]#Out
     val runOpWith: In => (A, A => Out) = {
       h: In =>
         (a, { _ => h.map(f) })
     }
   }
+
+  // can't seem to make this generic for any HList
+  def opConst[H <: HList, A:Kernel](x:A)(implicit M:Mapper[Zero.type, H]): Op[H, A] = op1PloyMap[H, A](x, Zero)
 
   def op0[A: Kernel](x: A): Op[HNil, A] {type Out = HNil} = new Op[HNil, A] {
     override type Out = HNil
@@ -51,6 +54,10 @@ object Op {
         (c, dadb andThen { ab: (A, B) => ab._1 :: ab._2 :: HNil })
     }
   }
+
+  def idOp[A:Kernel]: Op[A :: HNil, A] {
+    type Out = A :: HNil
+  } = op1[A, A](a => (a, identity))
 
   def square[A](implicit K: Kernel[A]): Op[A :: HNil, A] {type Out = A :: HNil} =
     op1(x => (K.times(x, x), d => K.times(K.fromInt(2), K.times(x, d))))
@@ -87,7 +94,6 @@ object Op {
                     P.apply(gx.apply(x0), gy.apply(y0))
                 }
             }
-
         }
       }
     }

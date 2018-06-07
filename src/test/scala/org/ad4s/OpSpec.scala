@@ -1,8 +1,8 @@
 package org.ad4s
 
-import org.scalacheck.Prop.{forAll, BooleanOperators}
+import org.scalacheck.Prop.{BooleanOperators, forAll}
 import org.scalacheck.Properties
-import shapeless.{HNil, ::}
+import shapeless._
 
 
 object OpSpec extends Properties("Op") {
@@ -13,6 +13,14 @@ object OpSpec extends Properties("Op") {
     d: Double =>
       val actual = runOp(op0(d))(HNil)
       actual == (d -> HNil)
+  }
+
+  property("const op returns 0 on all inputs for gradients") = forAll {
+    x: Double =>
+      val value = opConst[Double :: Double :: HNil, Double](x)
+      val actual = runOp(value)(1d :: 2d :: HNil)
+      val expected = (x, 0d :: 0d :: HNil)
+      (actual == expected) :| s"$actual != $expected"
   }
 
   property("square for doubles") = forAll {
