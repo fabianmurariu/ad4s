@@ -1,4 +1,4 @@
-package org.ad4s
+package org.ad4s.op
 
 import org.scalacheck.Prop.{BooleanOperators, forAll}
 import org.scalacheck.Properties
@@ -7,7 +7,7 @@ import shapeless._
 
 object OpSpec extends Properties("Op") {
 
-  import org.ad4s.Op._
+  import Op._
 
   property("no op for doubles") = forAll {
     d: Double =>

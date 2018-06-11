@@ -2,7 +2,7 @@ package org.ad4s.core
 
 import cats.Eval
 //import cats.data.State
-//import org.ad4s.Op
+//import org.ad4s.op.Op
 //import org.ad4s.tape.Tape
 //import shapeless.{::, HNil}
 

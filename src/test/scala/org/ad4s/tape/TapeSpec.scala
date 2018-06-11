@@ -88,6 +88,34 @@ class TapeSpec extends FlatSpec with Matchers {
     dzdy should be(Math.sin(0.5d))
   }
 
+  it should "sum a vector of vars" in {
+    import NumKernel._
+    import Var._
+    import cats.instances.vector._
+
+    val t = Tape.empty[Double]
+    val vs = Vector(t._varS(1d), t._varS(2d), t._varS(3d))
+    val z = reduceSum(vs).get
+    val (_, (zVal, grads)) = z.eval.run(t).value
+    zVal should be(Var(1d + 2d + 3d, 4))
+    grads.derivs.take(3) should be(Vector(1d, 1d, 1d))
+  }
+
+  it should "get derivs for exponentials x**y" in {
+    import NumKernel._
+    import Var._
+
+    val t = Tape.empty[Double]
+    val x = t._varS(2d)
+    val y = t._varS(3d)
+    val z = x ** y
+    val (_, (zVal, grads)) = z.eval.run(t).value
+    zVal should be(Var(8d, 2))
+    grads.derivs(0) should be(12d)
+    grads.derivs(1) should be(Math.pow(2d, 3d) * Math.log(2d))
+
+  }
+
   "Eval" should "retain the value of the function and not call it twice" in {
     var x: Int = -1
     val e = Eval.later {

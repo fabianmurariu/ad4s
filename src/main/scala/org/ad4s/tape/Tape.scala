@@ -1,5 +1,6 @@
 package org.ad4s.tape
 
+import cats.Traverse
 import cats.data.State
 
 import scala.collection.mutable.ArrayBuffer
@@ -37,11 +38,13 @@ case class Var[T](v: T, idx: Int)
 case class Grad[T](derivs: Vector[T])
 
 object Var {
+  // aka Lazy var
+  type LVar[T] = State[Tape[T], Var[T]]
 
-  implicit def liftVar[T](a: Var[T]): State[Tape[T], Var[T]] = State.pure[Tape[T], Var[T]](a)
+  implicit def liftVar[T](a: Var[T]): LVar[T] = State.pure[Tape[T], Var[T]](a)
 
-  implicit class VarOps[T](val a: State[Tape[T], Var[T]]) extends AnyVal {
-    def +(b: State[Tape[T], Var[T]])(implicit N: NumKernel[T]): State[Tape[T], Var[T]] =
+  implicit class VarOps[T](val a: LVar[T]) extends AnyVal {
+    def +(b: LVar[T])(implicit N: NumKernel[T]): LVar[T] =
       for {
         va <- a
         vb <- b
@@ -51,7 +54,7 @@ object Var {
         }
       } yield plus_ab
 
-    def *(b: State[Tape[T], Var[T]])(implicit N: NumKernel[T]): State[Tape[T], Var[T]] =
+    def *(b: LVar[T])(implicit N: NumKernel[T]): LVar[T] =
       for {
         va <- a
         vb <- b
@@ -61,12 +64,26 @@ object Var {
         }
       } yield times_ab
 
+    def **(b: LVar[T])(implicit N: NumKernel[T]): LVar[T] =
+      for {
+        va <- a
+        vb <- b
+        pow_ab <- State[Tape[T], Var[T]] {
+          t =>
+            val dx = N.times(vb.v, N.pow(va.v, N.minus(vb.v, N.one)))
+            val dy = N.times(N.pow(va.v, vb.v), N.log(va.v))
+            t -> Var(N.pow(va.v, vb.v), t.push2(va.idx, dx, vb.idx, dy))
+        }
+      } yield pow_ab
+
     def eval(implicit N: NumKernel[T], CT: ClassTag[T]): State[Tape[T], (Var[T], Grad[T])] =
       for {
         va <- a
         g <- State.inspect {
           s: Tape[T] =>
-            val derivs = Array.fill(s.len) {N.zero}(CT)
+            val derivs = Array.fill(s.len) {
+              N.zero
+            }(CT)
             derivs(va.idx) = N.one
             for (i <- (s.len - 1) to 0 by -1) {
               val n = s.nodes(i)
@@ -82,7 +99,14 @@ object Var {
 
   }
 
-  def sin[T](a: State[Tape[T], Var[T]])(implicit N: NumKernel[T]): State[Tape[T], Var[T]] = for {
+  def reduce[F[_], T: NumKernel](vs: F[LVar[T]])(f: (LVar[T], LVar[T]) => LVar[T])
+                                (implicit R: Traverse[F]): Option[LVar[T]] =
+    R.reduceLeftOption(vs)(f)
+
+  def reduceSum[F[_], T: NumKernel](vs: F[LVar[T]])(implicit R: Traverse[F]): Option[LVar[T]] =
+    reduce(vs)(_ + _)
+
+  def sin[T](a: LVar[T])(implicit N: NumKernel[T]): LVar[T] = for {
     va <- a
     sin_a <- State[Tape[T], Var[T]] {
       t =>
