@@ -24,7 +24,7 @@ class Tape[A: NumKernel] {
   def _var(v: A): Var[A] = Var(v, push2())
 
   def _varS(v: A): State[Tape[A], Var[A]] =
-    State.pure(Var(v, push2()))
+    State.pure(_var(v))
 }
 
 object Tape {
@@ -41,7 +41,10 @@ object Var {
   // aka Lazy var
   type LVar[T] = State[Tape[T], Var[T]]
 
-  implicit def liftVar[T](a: Var[T]): LVar[T] = State.pure[Tape[T], Var[T]](a)
+  implicit def liftVar[T](a: T): LVar[T] = State[Tape[T], Var[T]]{
+    s =>
+      (s, Var(a, s.push2()))
+  }
 
   implicit class VarOps[T](val a: LVar[T]) extends AnyVal {
     def +(b: LVar[T])(implicit N: NumKernel[T]): LVar[T] =

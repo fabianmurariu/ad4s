@@ -26,9 +26,9 @@ class NetSpec extends FlatSpec with Matchers {
       (W * x) + b
     }
 
-    def cost(pred:LVar[Double], y:LVar[Double]):LVar[Double] = {
-      (y - pred) ** 2
-    }
+//    def cost(pred:LVar[Double], y:LVar[Double]):LVar[Double] = {
+//      (y - pred) ** liftVar(2)
+//    }
 
   }
 
