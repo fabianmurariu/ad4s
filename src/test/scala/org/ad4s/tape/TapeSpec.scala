@@ -116,6 +116,21 @@ class TapeSpec extends FlatSpec with Matchers {
 
   }
 
+  it should "get derivs for sum X + Y" in {
+    import NumKernel._
+    import Var._
+
+    val t = Tape.empty[Double]
+    val x = t._varS(1d)
+    val y = t._varS(2d)
+    val z = x + y
+    val (_, (zVal, grads)) = z.eval.run(t).value
+    zVal should be(Var(3.0, 2))
+    grads.derivs(0) should be(1d)
+    grads.derivs(1) should be(1d)
+
+  }
+
   "Eval" should "retain the value of the function and not call it twice" in {
     var x: Int = -1
     val e = Eval.later {

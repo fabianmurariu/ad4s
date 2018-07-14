@@ -1,8 +1,7 @@
 package org.ad4s.tape2
 
-import cats.Traverse
 import cats.effect.IO
-import org.ad4s.core.{Backprop, Ones, Sum, Zeros}
+import org.ad4s.core.{Backprop, Sum, Zeros}
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.ArrayBuffer
@@ -66,6 +65,15 @@ object Backprop {
   def plus[A: Numeric]: OpV2[A] = opN[A] {
     xs =>
       (xs.sum, g => Seq.fill(xs.length)(g))
+  }
+
+  def times[A](implicit K: Numeric[A]): OpV2[A] = opN[A] {
+    xs =>
+      (xs.product, g => xs.zipWithIndex.map {
+        case (_, i) =>
+          val rest = xs.zipWithIndex.filterNot{case (_, j) => i == j}.map(_._1).product
+          K.times(g, rest)
+      })
   }
 
   def runOp[T: Numeric](op: OpV2[T])(ts: T*): (T, Seq[T]) = {
@@ -169,5 +177,22 @@ object Backprop {
       oVar.v
     }
   } yield (w, o)
+
+  def gradRunner[T](x: T, r: Runner[T], t: Tape[T]) = {
+    r.rDelta(r.rDelta.length - 1) = x
+    t.tape.reverse.zipWithIndex.foreach {
+      case (SomeTapeNode(_, tn), i) =>
+        val delt = r.rDelta(i)
+        val gs: Seq[T] = tn.grad(delt)
+        //TODO: check base case when either is empty
+        tn.inputs.zip(gs).foreach {
+          case (InpRef(BVar(BRInp(i), _), add), d) =>
+            r.rInputs(i) = add(r.rInputs(i), d)
+          case (InpRef(BVar(BRIx(i), _), add), d) =>
+            r.rDelta(i) = add(r.rDelta(i), d)
+          case (InpRef(BVar(BRC, _), add), d) =>
+        }
+    }
+  }
 
 }
