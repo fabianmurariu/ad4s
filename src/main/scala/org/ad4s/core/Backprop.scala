@@ -13,11 +13,3 @@ trait Ones[A] {
 trait Sum[A] {
   def add(a1: A, a2: A): A
 }
-
-object Backprop {
-
-  //  import shapeless._
-  //  import UnaryTCConstraint._
-
-  //  def backpropN[H <: HList, S[_], B, BVARS <: HList : *->*[BVar[S, ?]]](s: S => BVARS)(x: H): (B, H) = ???
-}

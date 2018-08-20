@@ -28,7 +28,7 @@ class BackpropSpec extends FlatSpec with Matchers {
     actual.rInputs should be(Seq(1d, 2d))
   }
 
-  it should "enable fill the gradients in the Runner" in {
+  it should "enable fill the gradients in the Runner" in pendingUntilFixed {
     val (t, out) = fillWengert2[Double](testSum2BVar)(1d, 2d).unsafeRunSync()
     val runner = Runner(t, 1d, 2d)
     gradRunner(1d, runner, t)
