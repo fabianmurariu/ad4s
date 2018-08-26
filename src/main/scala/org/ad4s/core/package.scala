@@ -7,6 +7,9 @@ package object core {
     def +(b: T)(implicit K: Kernel[T]) =
       K.plus(a, b)
 
+    def *(b: T)(implicit K: Kernel[T]) =
+      K.times(a, b)
+
   }
 
 }

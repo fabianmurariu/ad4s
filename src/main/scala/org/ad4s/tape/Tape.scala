@@ -10,24 +10,21 @@ import scala.reflect.ClassTag
 // port from https://github.com/Rufflewind/revad/blob/master/src/tape.rs
 // build the intuition
 class Tape[A: NumKernel] {
-  val nodes: ArrayBuffer[Node[A]] = ArrayBuffer.empty[Node[A]]
   val nodes2: ArrayBuffer[Node2[A]] = ArrayBuffer.empty[Node2[A]]
 
-  def len: Int = nodes.length
+  def len: Int = nodes2.length
 
   def reverse: Seq[Int] = (len - 1) to 0 by -1
 
   def push2[T](dep0: Int = len, weight0: A = implicitly[NumKernel[A]].zero,
                dep1: Int = len, weight1: A = implicitly[NumKernel[A]].zero): Int = {
     val n = len
-    nodes += Node((dep0, dep1), (weight0, weight1))
     // functions on a chain
     val NK = implicitly[NumKernel[A]]
-    nodes2 += Node2((dep0, dep1), {
-      g:A =>
+    nodes2 += Node2(InpRef((dep0, dep1), implicitly[NumKernel[A]].plus), {
+      g: A =>
         (NK.times(weight0, g), NK.times(weight1, g))
     })
-
     n
   }
 
@@ -41,8 +38,9 @@ object Tape {
   def empty[T: NumKernel] = new Tape[T]()
 }
 
-case class Node[T](deps: (Int, Int), vals: (T, T))
-case class Node2[T](deps: (Int, Int), g : T => (T, T))
+case class InpRef[T](deps: (Int, Int), add: (T, T) => T)
+
+case class Node2[T](deps: InpRef[T], g: T => (T, T))
 
 case class Var[T](v: T, idx: Int)
 
@@ -52,7 +50,7 @@ object Var {
   // aka Lazy var
   type LVar[T] = State[Tape[T], Var[T]]
 
-  implicit def liftVar[T](a: T): LVar[T] = State[Tape[T], Var[T]]{
+  implicit def liftVar[T](a: T): LVar[T] = State[Tape[T], Var[T]] {
     s =>
       (s, Var(a, s.push2()))
   }
@@ -90,27 +88,6 @@ object Var {
         }
       } yield pow_ab
 
-//    def eval(implicit N: NumKernel[T], CT: ClassTag[T]): State[Tape[T], (Var[T], Grad[T])] =
-//      for {
-//        va <- a
-//        g <- State.inspect {
-//          s: Tape[T] =>
-//            val derivs = Array.fill(s.len) {
-//              N.zero
-//            }(CT)
-//            derivs(va.idx) = N.one
-//            for (i <- (s.len - 1) to 0 by -1) {
-//              val n = s.nodes(i)
-//              val deriv = derivs(i)
-//              val (k, j) = n.deps // left and right dependency of this node
-//              val (wk, wj) = n.vals // left and right weights of this node
-//              derivs(k) = N.plus(derivs(k), N.times(wk, deriv))
-//              derivs(j) = N.plus(derivs(j), N.times(wj, deriv))
-//            }
-//            va -> Grad[T](derivs.toVector)
-//        }
-//      } yield g
-
     def eval2(implicit N: NumKernel[T], CT: ClassTag[T]): State[Tape[T], (Var[T], Grad[T])] =
       for {
         va <- a
@@ -123,10 +100,10 @@ object Var {
             for (i <- s.reverse) {
               val n = s.nodes2(i)
               val deriv = derivs(i)
-              val (k, j) = n.deps // left and right dependency of this node
+              val (k, j) = n.deps.deps // left and right dependency of this node
               val (wk, wj) = n.g(deriv) // left and right weights of this node
-              derivs(k) = N.plus(derivs(k), wk)
-              derivs(j) = N.plus(derivs(j), wj)
+              derivs(k) = n.deps.add(derivs(k), wk)
+              derivs(j) = n.deps.add(derivs(j), wj)
             }
             va -> Grad[T](derivs.toVector)
         }

@@ -121,38 +121,6 @@ object Backprop {
   def constBVar[T](t: T) =
     BVar(BRC, t)
 
-  def backprop2[T: Backprop](f: Tape[T] => (BVar[T], BVar[T]) => BVar[T])
-                            (x1: T, x2: T): (T, (T, T)) = {
-    val (t, Seq(du, dv)) = (backpropN[T] _) {
-      tape: Tape[T] =>
-        (xs: Seq[BVar[T]]) => {
-          val a :: b :: _ = xs
-          f(tape)(a, b)
-        }
-    }.apply(Seq(x1, x2))
-    (t, (du, dv))
-  }
-
-  /**
-    * Given
-    *
-    * @param f
-    * any function with that takes a tape and a bunch of BVars
-    * and returns a BVar
-    * @param xs
-    * and a set of input parameters for them BVars
-    * @tparam T
-    * all of type T
-    * @return
-    * a tuple with
-    * (the result of the computation, the gradient with respect to the inputs)
-    */
-  def backpropN[T](f: Tape[T] => Seq[BVar[T]] => BVar[T])
-                  (xs: T*)
-                  (implicit B: Backprop[T]): (T, Seq[T]) = {
-    ???
-  }
-
   def initWengert[T]: IO[Tape[T]] = IO {
     new Tape[T]
   }

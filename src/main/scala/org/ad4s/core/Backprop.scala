@@ -13,3 +13,7 @@ trait Ones[A] {
 trait Sum[A] {
   def add(a1: A, a2: A): A
 }
+
+trait Times[A] {
+  def times(a1:A, a2: A):A
+}
