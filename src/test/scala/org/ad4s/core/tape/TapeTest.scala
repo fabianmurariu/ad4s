@@ -1,12 +1,29 @@
 package org.ad4s.core.tape
 
+import org.ad4s.core.Bv
+import org.scalatest.FlatSpec
 import org.scalatest.check.Checkers
-import org.scalatest.{FlatSpec, Matchers}
+import Bv.Implicits._
+import BackpropContext.Implicits._
+import org.scalacheck.Prop.BooleanOperators
 
-class TapeTest extends FlatSpec with Checkers{
+class TapeTest extends FlatSpec with Checkers {
 
-  "Tape" should "be checked" in check { (a: List[Int], b: List[Int]) =>
-    a.size + b.size == (a ::: b).size
+  "Backprop" should "return (dx/dz, dy/dz) as (1, 1) " in check { (a: Double, b: Double) =>
+    val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext[Double] =>
+      x + y
+    }
+
+    val (dx, dy) = Tape.runGrads(f)(a, b)
+    dx == 1d && dy == 1d
   }
 
+  it should "return (dx/dz, dy/dz) as (y, x)" in check { (a: Double, b:Double) =>
+    val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext[Double] =>
+      x * y
+    }
+
+    val (dx, dy) = Tape.runGrads(f)(a, b)
+    (dx == b && dy == a) :| s" $dx != $b | $dy != $a"
+  }
 }
