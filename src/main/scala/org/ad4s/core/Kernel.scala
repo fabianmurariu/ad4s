@@ -8,6 +8,7 @@ trait Kernel[T] {
   def one:T
   def zero(t:T):T
   def negate(t:T):T
+  def fromInt(i:Int):T
 }
 
 trait Maths[T] {
