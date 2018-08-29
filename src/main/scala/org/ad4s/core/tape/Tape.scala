@@ -1,7 +1,7 @@
 package org.ad4s.core.tape
 
 import cats.effect.IO
-import org.ad4s.core.{Backprop, Bv, Ones, Sum, Zeros}
+import org.ad4s.core.{Backprop, Bv, Ones, Sum}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -12,7 +12,7 @@ private[tape] class Tape[T] {
 
   def reverse(n: Int = this.len): Seq[Int] = n to 0 by -1
 
-  def insert0(tn: Node[T]): IO[Int] = IO {
+  private[tape] def insert0(tn: Node[T]): IO[Int] = IO {
     val n = len
     nodes2 += tn
     n
@@ -22,59 +22,42 @@ private[tape] class Tape[T] {
 
 object Tape {
 
-  def runGrads[T](f: (Bv[T], Bv[T]) => BackpropContext[T] => Bv[T])
-                 (t1: T, t2: T)(implicit B: Backprop[T]): (T, T) = {
-    val BC = new BackpropContext(new Tape[T])
-    // move to init tape
-    val n1 = Node(inputs = Seq.empty,
-      zero = B.zeros(t1), grad = { t: T => Seq(B.zeros(t), B.zeros(t)) })
-    val id1 = BC.insertNode(n1).unsafeRunSync()
-    val bv1 = Bv(InpRefN(id1, B), t1)
+  def runGrads[X, Z](m: TapeEvaluatorMagnet[X, Z])
+                    (x: X)(implicit B: Backprop[Z]): (Z, m.Grads) = {
+    implicit val BC: BackpropContext[Z] = new BackpropContext(new Tape[Z])
 
-    val n2 = Node(inputs = Seq.empty,
-      zero = B.zeros(t2), grad = { t: T => Seq(B.zeros(t), B.zeros(t)) })
-    val id2 = BC.insertNode(n2).unsafeRunSync()
-    val bv2 = Bv(InpRefN(id2, B), t2)
-
-    val out = f(bv1, bv2)(BC)
-
-    val Grad(grads) = evalGrads(out, BC.tape)(B)
-    (grads(0).asInstanceOf[T], grads(1).asInstanceOf[T])
+    val (out, gradBuilder) = m.eval(x)
+    val grad = evalGrads(out, BC.tape)(B)
+    (out.v, gradBuilder(grad))
   }
 
   def evalGrads[T](bv: Bv[T], t: Tape[T])(backprop: Ones[T]): Grad = {
-    bv.i match {
-      case InpRefN(i, _) =>
-        val derivs = t.nodes2.map(_.zero)
-        derivs(i) = backprop.ones(bv.v)
-        for (j <- t.reverse(i)) {
-          val deriv = derivs(j)
-          t.nodes2(j) match {
-            case n: Node[T]@unchecked =>
-              val gradWeights = n.grad(deriv)
-              n.inputs.zip(gradWeights).foreach {
-                case (idx: InpRefN[T]@unchecked, w) =>
-                  derivs(idx.i) = idx.sum.add(derivs(idx.i), w)
-              }
+    val InpRef(i, _) = bv.i
+    val derivs = t.nodes2.map(_.zero)
+    derivs(i) = backprop.ones(bv.v)
+    for (j <- t.reverse(i)) {
+      val deriv = derivs(j)
+      t.nodes2(j) match {
+        case n: Node[T]@unchecked =>
+          val gradWeights = n.grad(deriv)
+          n.inputs.zip(gradWeights).foreach {
+            case (idx: InpRef[T]@unchecked, w) =>
+              derivs(idx.i) = idx.sum.add(derivs(idx.i), w)
           }
-        }
-        Grad(derivs.toVector)
+      }
     }
+    Grad(derivs.toVector)
   }
 }
 
-sealed trait InpRef {
-  def i: Int
-}
+case class InpRef[T](i: Int, sum: Sum[T])
 
-case class InpRefN[T](i: Int, sum: Sum[T]) extends InpRef
-
-case class Node[T](inputs: Seq[InpRef], zero: T, grad: T => Seq[T])
+case class Node[T](inputs: Seq[InpRef[T]], zero: T, grad: T => Seq[T])
 
 case class Grad(dxs: Vector[Any])
 
-class BackpropContext[T](val tape: Tape[T]) {
-  def insertNode(tn: Node[T]): IO[Int] =
+class BackpropContext[T](private[core] val tape: Tape[T]) {
+  private[core] def insertNode(tn: Node[T]): IO[Int] =
     tape.insert0(tn)
 }
 

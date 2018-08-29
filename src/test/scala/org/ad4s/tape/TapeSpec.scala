@@ -10,7 +10,6 @@ class TapeSpec extends FlatSpec with Matchers {
   "Tape" should "create variable" in {
     val t = Tape.empty[Double]
     t.push2(0, 1.2d)
-//    t.nodes2 should be(ArrayBuffer(Node2((0, 0), (1.2d, 0d))))
   }
 
   it should "lift, sum 2 variables and apply to tape" in {
@@ -23,13 +22,6 @@ class TapeSpec extends FlatSpec with Matchers {
     val z = (x + y) * sin(x)
     val (newTape, out) = z.run(t).value
     out should be(Var((0.5d + 4.2d) * Math.sin(0.5), 4))
-//    newTape.nodes2 should be(Seq(
-//      Node((0, 0), (0d, 0d)),
-//      Node((1, 1), (0d, 0d)),
-//      Node((0, 1), (1d, 1d)),
-//      Node((0, 3), (Math.cos(0.5d), 0d)),
-//      Node((2, 3), (Math.sin(0.5d), 0.5d + 4.2d))
-//    ))
   }
 
   it should "return the derivates and value for x * y" in {
