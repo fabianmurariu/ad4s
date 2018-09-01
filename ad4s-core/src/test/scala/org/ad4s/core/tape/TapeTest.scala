@@ -11,7 +11,7 @@ import org.scalacheck.Prop.BooleanOperators
 
 class TapeTest extends FlatSpec with Checkers {
 
-  "Backprop" should "return (dx/dz, dy/dz) as (1, 1) " in check { (a: Double, b: Double) =>
+  "Backprop" should "return (dx/dz, dy/dz) as (1, 1) for z=x+y " in check { (a: Double, b: Double) =>
     val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext[Double] =>
       x + y
     }
@@ -19,6 +19,16 @@ class TapeTest extends FlatSpec with Checkers {
     val (z, (dx, dy)) = Tape.runGrads(f)((a, b))
     val expectedZ = a + b
     (dx == 1d && dy == 1d) :| s" $dx != $b | $dy != $a, $z != $expectedZ"
+  }
+
+  it should "return (dx/dz, dy/dz) as (1, 1) for z=x-y" in check { (a: Double, b: Double) =>
+    val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext[Double] =>
+      x - y
+    }
+
+    val (z, (dx, dy)) = Tape.runGrads(f)((a, b))
+    val expectedZ = a - b
+    (dx == 1d && dy == -1d) :| s" $dx != $b | $dy != $a, $z != $expectedZ"
   }
 
   it should "return (dx/dz, dy/dz) as (y, x)" in check { (a: Double, b: Double) =>

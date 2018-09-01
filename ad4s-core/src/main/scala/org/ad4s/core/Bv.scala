@@ -1,9 +1,8 @@
 package org.ad4s.core
 
-import cats.effect.IO
 import org.ad4s.core.tape._
 
-case class Bv[T](i: InpRef[T], v: T)
+case class Bv[T](i: Int, v: T)
 
 object Bv {
 
@@ -14,7 +13,7 @@ object Bv {
       grad = { _: T => Seq.empty[T] }
     )
     val idx = BC.insertNode(node).unsafeRunSync()
-    new Bv(InpRef(idx, B.add), v)
+    new Bv(idx, v)
   }
 
   object Implicits {
@@ -22,6 +21,9 @@ object Bv {
     implicit class BvOps[T](val a: Bv[T]) extends AnyVal {
       def +(b: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T]): Bv[T] =
         Ops.plus(a, b).unsafeRunSync()
+
+      def -(b: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T]): Bv[T] =
+        Ops.minus(a, b).unsafeRunSync()
 
       def *(b: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T]): Bv[T] =
         Ops.times(a, b).unsafeRunSync()
