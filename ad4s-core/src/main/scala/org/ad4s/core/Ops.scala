@@ -6,6 +6,16 @@ import org.ad4s.core.tape.{BackpropContext, InpRef, Node}
 object Ops extends LowPriorityOps
 
 trait LowPriorityOps {
+  def sigmoid_[T](x: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T], M: Maths[T]): IO[Bv[T]] =
+    B.insertNode(Node[T](
+      inputs = Seq(InpRef(x.i, K.plus)),
+      zero = K.zero(x.v),
+      grad = { g: T =>
+        val ex = M.exp(-x.v)
+        val dx = ex / M.powi(ex + K.fromInt(x.v, 1), 2)
+        Seq(g * dx) })
+    ).map(i => Bv(i, M.sigmoid(x.v)))
+
   def sin_[T](x: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T], M: Maths[T]): IO[Bv[T]] =
     B.insertNode(Node[T](
       inputs = Seq(InpRef(x.i, K.plus)),
@@ -36,6 +46,9 @@ trait LowPriorityOps {
   def log[T](x: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T], M: Maths[T]): Bv[T] =
     log_(x).unsafeRunSync()
 
+  def sigmoid[T](x: Bv[T])(implicit B: BackpropContext[T], K: Kernel[T], M: Maths[T]): Bv[T] =
+    sigmoid_(x).unsafeRunSync()
+
   def pow_[T](a: Bv[T], b: Bv[T])
              (implicit B: BackpropContext[T], K: Kernel[T], M: Maths[T]): IO[Bv[T]] =
     for {
@@ -45,7 +58,7 @@ trait LowPriorityOps {
           inputs = Seq(InpRef(a.i, K.plus), InpRef(b.i, K.plus)),
           zero = K.zero(v),
           grad = { g: T =>
-            val da = b.v * M.pow(a.v, K.minus(b.v, K.fromInt(1)))
+            val da = b.v * M.pow(a.v, K.minus(b.v, K.fromInt(b.v, 1)))
             val db = M.pow(a.v, b.v * M.log(a.v))
             Seq(da * g, db * g)
           }))

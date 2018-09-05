@@ -41,6 +41,20 @@ class TapeTest extends FlatSpec with Checkers {
     (z == expectedZ && dx == b && dy == a) :| s" $dx != $b | $dy != $a, $z != $expectedZ"
   }
 
+  it should "return dx/dz as correct derivative for sigmoid(x)" in check {
+    x: Double =>
+      (Math.abs(x) < 100) ==> {
+        val f = (x: Bv[Double]) => { implicit BC: BackpropContext[Double] =>
+          sigmoid(x)
+        }
+
+        val (z, dx) = Tape.runGrads(f)(x)
+        val expected = Math.exp(-x) / Math.pow(Math.exp(-x) + 1, 2)
+        val expectedZ = 1 / (Math.exp(-x) + 1)
+        (z == expectedZ && dx == expected) :| s"$dx != $expected, $z != $expectedZ"
+      }
+  }
+
   it should "return dx/dz as cos(x)" in check {
     x: Double =>
       val f = (x: Bv[Double]) => { implicit BC: BackpropContext[Double] =>
@@ -48,7 +62,7 @@ class TapeTest extends FlatSpec with Checkers {
       }
 
       val (z, dx) = Tape.runGrads(f)(x)
-      val expected = implicitly[Maths[Double]].cos(x)
+      val expected = Math.cos(x)
       val expectedZ = Math.sin(x)
       (z == expectedZ && dx == expected) :| s"$dx != $expected, $z != $expectedZ"
   }

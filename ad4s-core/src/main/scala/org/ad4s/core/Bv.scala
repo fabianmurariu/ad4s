@@ -38,13 +38,13 @@ object Bv {
 
       override def div(a: T, b: T): T = N.div(a, b)
 
-      override def one: T = N.one
+      override def one(a: T): T = N.one
 
       override def zero(t: T): T = N.zero
 
       override def negate(t: T): T = N.negate(t)
 
-      override def fromInt(i: Int): T = N.fromInt(i)
+      override def fromInt(t: T, i: Int): T = N.fromInt(i)
     }
 
     implicit val mathsForDouble: Maths[Double] = new Maths[Double] {
@@ -57,6 +57,13 @@ object Bv {
       override def log(x: Double): Double = Math.log(x)
 
       override def pow(x: Double, n: Double): Double = Math.pow(x, n)
+
+      override def sigmoid(x: Double): Double = {
+        val ex = exp(-x)
+        1 / (ex + 1)
+      }
+
+      override def powi(x: Double, n: Int): Double = Math.pow(x, n)
     }
   }
 
