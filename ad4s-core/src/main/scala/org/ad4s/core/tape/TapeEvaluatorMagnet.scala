@@ -1,24 +1,25 @@
 package org.ad4s.core.tape
 
-import org.ad4s.core.{Backprop, Bv}
+import org.ad4s.core.backprop.{Backprop, Bv}
+
 import scala.language.implicitConversions
 
 trait TapeEvaluatorMagnet[X, Z] {
   type Grads
 
   def eval(x: X)
-          (implicit BC: BackpropContext[Z], B: Backprop[Z]): (Bv[Z], Grad => Grads)
+          (implicit BC: BackpropContext, B: Backprop[Z]): (Bv[Z], Grad => Grads)
 }
 
 object TapeEvaluatorMagnet {
-  type BvOut[T] = BackpropContext[T] => Bv[T]
+  type BvOut[T] = BackpropContext => Bv[T]
 
   object Implicits {
     implicit def liftFn1IntoMagnet[T](f: Bv[T] => BvOut[T]) = new TapeEvaluatorMagnet[T, T] {
       override type Grads = T
 
       override def eval(x: T)
-                       (implicit BC: BackpropContext[T], B: Backprop[T]): (Bv[T], Grad => T) = {
+                       (implicit BC: BackpropContext, B: Backprop[T]): (Bv[T], Grad => T) = {
         val bv1 = Bv(x)
         val bvOut = f(bv1)(BC)
         (bvOut, grad => grad.dxs(0).asInstanceOf[T])
@@ -29,7 +30,7 @@ object TapeEvaluatorMagnet {
       override type Grads = (T, T)
 
       override def eval(x: (T, T))
-                       (implicit BC: BackpropContext[T], B: Backprop[T]): (Bv[T], Grad => (T, T)) = {
+                       (implicit BC: BackpropContext, B: Backprop[T]): (Bv[T], Grad => (T, T)) = {
 
         val bv1 = Bv(x._1)
         val bv2 = Bv(x._2)
@@ -42,7 +43,7 @@ object TapeEvaluatorMagnet {
       override type Grads = (T, T, T)
 
       override def eval(x: (T, T, T))
-                       (implicit BC: BackpropContext[T], B: Backprop[T]): (Bv[T], Grad => (T, T, T)) = {
+                       (implicit BC: BackpropContext, B: Backprop[T]): (Bv[T], Grad => (T, T, T)) = {
 
         val bv1 = Bv(x._1)
         val bv2 = Bv(x._2)
@@ -58,7 +59,7 @@ object TapeEvaluatorMagnet {
       override type Grads = (T, T, T, T)
 
       override def eval(x: (T, T, T, T))
-                       (implicit BC: BackpropContext[T], B: Backprop[T]): (Bv[T], Grad => (T, T, T, T)) = {
+                       (implicit BC: BackpropContext, B: Backprop[T]): (Bv[T], Grad => (T, T, T, T)) = {
 
         val bv1 = Bv(x._1)
         val bv2 = Bv(x._2)

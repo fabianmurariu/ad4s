@@ -25,7 +25,11 @@ lazy val commonsSettings = Seq(
 lazy val core = (project in file("ad4s-core"))
   .settings(commonsSettings)
   .settings(
-    name := "ad4s-core"
+    name := "ad4s-core",
+    libraryDependencies ++= Seq(
+      "com.github.mpilquist" %% "simulacrum" % "0.13.0",
+      "org.spire-math" %% "spire" % "0.13.0"
+    )
   )
 
 lazy val breeze = (project in file("ad4s-breeze"))

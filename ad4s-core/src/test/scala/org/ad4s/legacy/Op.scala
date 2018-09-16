@@ -1,4 +1,4 @@
-package org.ad4s.op
+package org.ad4s.legacy
 
 import shapeless._
 import shapeless.ops.hlist._

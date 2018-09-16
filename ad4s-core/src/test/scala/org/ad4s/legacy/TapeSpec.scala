@@ -1,9 +1,7 @@
-package org.ad4s.tape
+package org.ad4s.legacy
 
 import cats.Eval
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.collection.mutable.ArrayBuffer
 
 class TapeSpec extends FlatSpec with Matchers {
 

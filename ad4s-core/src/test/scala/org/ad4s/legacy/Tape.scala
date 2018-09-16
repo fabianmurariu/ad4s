@@ -1,4 +1,4 @@
-package org.ad4s.tape
+package org.ad4s.legacy
 
 import cats.Traverse
 import cats.data.State

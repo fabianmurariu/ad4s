@@ -1,4 +1,4 @@
-package org.ad4s.tape
+package org.ad4s.legacy
 
 trait NumKernel[T] {
   def zero: T
