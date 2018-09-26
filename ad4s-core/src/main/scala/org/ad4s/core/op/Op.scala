@@ -1,8 +1,8 @@
 package org.ad4s.core.op
 
 import cats.effect.IO
-import org.ad4s.core.backprop.{Backprop, Bv, Sum, Zeros}
-import org.ad4s.core.tape.{BackpropContext, InpRef, Node}
+import org.ad4s.core.backprop.{Bv, Sum, Zeros}
+import org.ad4s.core.tape._
 
 sealed trait Op
 
@@ -12,35 +12,28 @@ trait Op2[A, B, Z] extends ((A, B) => (Z, Z => (A, B)))
 
 object Op {
 
-  def liftOp1[A](a: Bv[A])(op: Op1[A, A])
-                (implicit B: BackpropContext, Z: Zeros[A], Sum: Sum[A]): IO[Bv[A]] =
+  def liftOp1[A1, Z](a: Bv[A1])(op: Op1[A1, Z])
+                    (implicit B: BackpropContext, Z: Zeros[Z], Sum: Sum[A1]): IO[Bv[Z]] =
     for {
       c <- IO.pure(op(a.v))
       (z, gradFn) = c
-      i <- B.insertNode(Node[A](
-        inputs = Seq(InpRef(a.i, Sum)),
+      i <- B.insertNode(Node1[A1, Z](
+        inp1 = InpRef(a.i, Sum),
         zero = Z.zeros(z),
-        grad = {
-          g =>
-            Seq(gradFn(g))
-        }
-      ))
+        grad = { g => gradFn(g) }))
     } yield Bv(i, z)
 
   @inline
-  def liftOp2[A](a: Bv[A], b: Bv[A])(op: Op2[A, A, A])
-                (implicit B: BackpropContext, Bp: Backprop[A]): IO[Bv[A]] =
+  def liftOp2[A1, A2, Z](a: Bv[A1], b: Bv[A2])(op: Op2[A1, A2, Z])
+                       (implicit B: BackpropContext, Z: Zeros[Z], Sum1:Sum[A1], Sum2:Sum[A2]): IO[Bv[Z]] =
     for {
       c <- IO.pure(op(a.v, b.v))
       (z, gradFn) = c
-      i <- B.insertNode(Node[A](
-        inputs = Seq(InpRef(a.i, Bp), InpRef(b.i, Bp)),
-        zero = Bp.zeros(z),
-        grad = {
-          g =>
-            val (da, db) = gradFn(g)
-            Seq(da, db)
-        }
+      i <- B.insertNode(Node2[A1, A2, Z](
+        inp1 = InpRef(a.i, Sum1),
+        inp2 = InpRef(b.i, Sum2),
+        zero = Z.zeros(z),
+        grad = { g => gradFn(g) }
       ))
     } yield Bv(i, z)
 }
@@ -70,5 +63,7 @@ object Ops {
   trait Exp[A, Z] extends Op1[A, Z]
 
   trait Pow[A, B, Z] extends Op2[A, B, Z]
+
+  trait Det[A, Z] extends Op1[A, Z]
 
 }

@@ -1,28 +1,28 @@
 package org.ad4s.core.tape
 
-import org.ad4s.core.backprop.{Backprop, Bv}
+import org.ad4s.core.backprop.{Backprop, Bv, Zeros}
 
 import scala.language.implicitConversions
 
-trait TapeEvaluatorMagnet[X, Z] {
+trait TapeEvaluatorMagnet[A, B] {
   type Grads
 
-  def eval(x: X)
-          (implicit BC: BackpropContext, B: Backprop[Z]): (Bv[Z], Grad => Grads)
+  def eval(x: A)
+          (implicit BC: BackpropContext, B: Backprop[B]): (Bv[B], Grad => Grads)
 }
 
 object TapeEvaluatorMagnet {
   type BvOut[T] = BackpropContext => Bv[T]
 
   object Implicits {
-    implicit def liftFn1IntoMagnet[T](f: Bv[T] => BvOut[T]) = new TapeEvaluatorMagnet[T, T] {
-      override type Grads = T
+    implicit def liftFn1IntoMagnet[A:Zeros, B](f: Bv[A] => BvOut[B]) = new TapeEvaluatorMagnet[A, B] {
+      override type Grads = A
 
-      override def eval(x: T)
-                       (implicit BC: BackpropContext, B: Backprop[T]): (Bv[T], Grad => T) = {
+      override def eval(x: A)
+                       (implicit BC: BackpropContext, BB: Backprop[B]): (Bv[B], Grad => A) = {
         val bv1 = Bv(x)
         val bvOut = f(bv1)(BC)
-        (bvOut, grad => grad.dxs(0).asInstanceOf[T])
+        (bvOut, grad => grad.dxs(0).asInstanceOf[A])
       }
     }
 

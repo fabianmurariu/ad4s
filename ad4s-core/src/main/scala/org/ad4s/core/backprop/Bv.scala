@@ -6,12 +6,8 @@ case class Bv[+T](i: Int, v: T)
 
 object Bv {
 
-  def apply[T](v: T)(implicit BC: BackpropContext, B: Backprop[T]): Bv[T] = {
-    val node = Node(
-      inputs = Seq.empty[InpRef[T]],
-      zero = B.zeros(v),
-      grad = { _: T => Seq.empty[T] }
-    )
+  def apply[T](v: T)(implicit BC: BackpropContext, Z:Zeros[T]): Bv[T] = {
+    val node = Node0(zero = Z.zeros(v))
     val idx = BC.insertNode(node).unsafeRunSync()
     new Bv(idx, v)
   }

@@ -6,13 +6,13 @@ import org.ad4s.core.backprop.{Backprop, Bv, Ones, Sum}
 import scala.collection.mutable.ArrayBuffer
 
 private[tape] class Tape {
-  val nodes2: ArrayBuffer[Node[_ <: Any]] = ArrayBuffer.empty[Node[_ <: Any]]
+  val nodes2: ArrayBuffer[TapeNode[_ <: Any]] = ArrayBuffer.empty[TapeNode[_ <: Any]]
 
   def len: Int = nodes2.length
 
   def reverse(n: Int = this.len): Seq[Int] = n to 0 by -1
 
-  private[tape] def insert0(tn: Node[_ <: Any]): IO[Int] = IO {
+  private[tape] def insert0(tn: TapeNode[_ <: Any]): IO[Int] = IO {
     val n = len
     nodes2 += tn
     n
@@ -32,31 +32,41 @@ object Tape {
   }
 
   def evalGrads[T](bv: Bv[T], t: Tape)(backprop: Ones[T]): Grad = {
-    val derivs = t.nodes2.map(_.zero)
+    val derivs = t.nodes2.map(_.zero) // this may be wrong
     derivs(bv.i) = backprop.ones(bv.v)
     for (j <- t.reverse(bv.i)) {
       val deriv = derivs(j)
       t.nodes2(j) match {
-        case n: Node[Any] @unchecked=>
-          val gradWeights = n.grad(deriv)
-          n.inputs.zip(gradWeights).foreach {
-            case (idx: InpRef[Any] @unchecked, w) =>
-              derivs(idx.i) = idx.sum.add(derivs(idx.i), w)
-          }
+        case _: Node0[Any]@unchecked => /*do nothing*/
+        case n1: Node1[Any, Any]@unchecked =>
+          val w = n1.grad(deriv)
+          derivs(n1.inp1.i) = n1.inp1.sum.add(derivs(n1.inp1.i), w)
+        case n2: Node2[Any, Any, Any]@unchecked =>
+          val (w1, w2) = n2.grad(deriv)
+          derivs(n2.inp1.i) = n2.inp1.sum.add(derivs(n2.inp1.i), w1)
+          derivs(n2.inp2.i) = n2.inp2.sum.add(derivs(n2.inp2.i), w2)
       }
     }
     Grad(derivs.toVector)
   }
 }
 
-case class InpRef[T](i: Int, sum: Sum[T])
+case class InpRef[T](i: Int, sum: Sum[T]) /* sum type might need extension */
 
-case class Node[T](inputs: Seq[InpRef[T]], zero: T, grad: T => Seq[T])
+sealed trait TapeNode[Z] {
+  def zero: Z
+}
+
+case class Node0[Z](zero: Z) extends TapeNode[Z]
+
+case class Node1[A1, Z](inp1: InpRef[A1], zero: Z, grad: Z => A1) extends TapeNode[Z]
+
+case class Node2[A1, A2, Z](inp1: InpRef[A1], inp2: InpRef[A2], zero: Z, grad: Z => (A1, A2)) extends TapeNode[Z]
 
 case class Grad(dxs: Vector[Any])
 
 class BackpropContext(private[core] val tape: Tape = new Tape) {
-  private[core] def insertNode[T](tn: Node[T]): IO[Int] =
+  private[core] def insertNode[T](tn: TapeNode[T]): IO[Int] =
     tape.insert0(tn)
 }
 

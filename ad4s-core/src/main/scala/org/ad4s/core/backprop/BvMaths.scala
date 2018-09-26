@@ -60,6 +60,9 @@ trait BvMaths {
   def log[A](a: Bv[A])(implicit OP: Log[A, A], Bp: Backprop[A], B: BackpropContext): Bv[A] =
     Op.liftOp1(a)(OP).unsafeRunSync()
 
+  def det[A:Sum, B:Zeros](a: Bv[A])(implicit OP: Det[A, B], B: BackpropContext): Bv[B] =
+    Op.liftOp1(a)(OP).unsafeRunSync()
+
 }
 
 object BvMaths {

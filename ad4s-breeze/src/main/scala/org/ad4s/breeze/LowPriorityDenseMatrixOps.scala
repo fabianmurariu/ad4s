@@ -1,8 +1,8 @@
 package org.ad4s.breeze
 
-import breeze.linalg.DenseMatrix
+import breeze.linalg.{DenseMatrix, det, inv}
 import org.ad4s.core.backprop.Backprop
-import org.ad4s.core.op.Ops.{Exp, Plus, Sigmoid, Times}
+import org.ad4s.core.op.Ops._
 import breeze.numerics._
 
 trait LowPriorityDenseMatrixOps {
@@ -34,6 +34,13 @@ trait LowPriorityDenseMatrixOps {
             val ones = DenseMatrix.ones[Double](ex.rows, ex.cols)
             g * (ex / pow(ex + ones, 2))
         })
+      }
+    }
+
+    implicit val detOps:Det[Matrix, Double] = new Det[Matrix, Double] {
+      override def apply(v1: Matrix): (Double, Double => Matrix) = {
+        val d = det(v1)
+        (d, g  => g * d * inv(v1.t))
       }
     }
 
