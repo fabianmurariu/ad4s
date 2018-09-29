@@ -9,38 +9,33 @@ trait BvMaths {
 
   //TODO: figure out what these should return
   // they return IO[Bv[A]]
-  def plus[A](a: Bv[A], b: Bv[A])
-             (implicit P: Plus[A, A, A],
-              Bp: Backprop[A],
-              B: BackpropContext): IO[Bv[A]] = {
+  def plus[A: Sum, B: Sum, C: Zeros](a: Bv[A], b: Bv[B])
+                                    (implicit P: Plus[A, B, C],
+                                     B: BackpropContext): IO[Bv[C]] = {
     Op.liftOp2(a, b)(P)
   }
 
-  def minus[A](a: Bv[A], b: Bv[A])
-              (implicit OP: Minus[A, A, A],
-               B: Backprop[A],
-               BC: BackpropContext): IO[Bv[A]] = {
+  def minus[A: Sum, B: Sum, C: Zeros](a: Bv[A], b: Bv[B])
+                                     (implicit OP: Minus[A, B, C],
+                                      BC: BackpropContext): IO[Bv[C]] = {
     Op.liftOp2(a, b)(OP)
   }
 
-  def times[A](a: Bv[A], b: Bv[A])
-              (implicit OP: Times[A, A, A],
-               B: Backprop[A],
-               BC: BackpropContext): IO[Bv[A]] = {
+  def times[A: Sum, B: Sum, C: Zeros](a: Bv[A], b: Bv[B])
+                                     (implicit OP: Times[A, B, C],
+                                      BC: BackpropContext): IO[Bv[C]] = {
     Op.liftOp2(a, b)(OP)
   }
 
-  def div[A](a: Bv[A], b: Bv[A])
-            (implicit OP: Div[A, A, A],
-             B: Backprop[A],
-             BC: BackpropContext): IO[Bv[A]] = {
+  def div[A: Sum, B: Sum, C: Zeros](a: Bv[A], b: Bv[B])
+                                   (implicit OP: Div[A, B, C],
+                                    BC: BackpropContext): IO[Bv[C]] = {
     Op.liftOp2(a, b)(OP)
   }
 
-  def pow[A](a: Bv[A], b: Bv[A])
-            (implicit OP: Pow[A, A, A],
-             B: Backprop[A],
-             BC: BackpropContext): IO[Bv[A]] = {
+  def pow[A: Sum, B: Sum, C: Zeros](a: Bv[A], b: Bv[B])
+                                   (implicit OP: Pow[A, B, C],
+                                    BC: BackpropContext): IO[Bv[C]] = {
     Op.liftOp2(a, b)(OP)
   }
 
@@ -60,7 +55,8 @@ trait BvMaths {
   def log[A](a: Bv[A])(implicit OP: Log[A, A], Bp: Backprop[A], B: BackpropContext): Bv[A] =
     Op.liftOp1(a)(OP).unsafeRunSync()
 
-  def det[A:Sum, B:Zeros](a: Bv[A])(implicit OP: Det[A, B], B: BackpropContext): Bv[B] =
+  def det[A: Sum, B: Zeros](a: Bv[A])
+                           (implicit OP: Det[A, B], BC: BackpropContext): Bv[B] =
     Op.liftOp1(a)(OP).unsafeRunSync()
 
 }

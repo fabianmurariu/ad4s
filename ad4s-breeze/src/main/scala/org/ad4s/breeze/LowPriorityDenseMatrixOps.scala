@@ -40,7 +40,7 @@ trait LowPriorityDenseMatrixOps {
     implicit val detOps:Det[Matrix, Double] = new Det[Matrix, Double] {
       override def apply(v1: Matrix): (Double, Double => Matrix) = {
         val d = det(v1)
-        (d, g  => g * d * inv(v1.t))
+        (d, g  => (g * d) * inv(v1).t)
       }
     }
 

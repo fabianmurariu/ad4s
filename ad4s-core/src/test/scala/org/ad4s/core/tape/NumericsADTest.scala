@@ -10,7 +10,7 @@ import spire.implicits._
 import org.ad4s.core.backprop.BvMaths.ops._
 import org.ad4s.core.numeric.NumericOps.ops._
 
-class TapeTest extends FlatSpec with Checkers {
+class NumericsADTest extends FlatSpec with Checkers {
 
   "Backprop" should "return (dx/dz, dy/dz) as (1, 1) for z=x+y " in check { (a: Double, b: Double) =>
     val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext =>
