@@ -1,7 +1,7 @@
 package org.ad4s.core.tape
 
 import cats.effect.IO
-import org.ad4s.core.backprop.{Backprop, Bv, Ones, Sum}
+import org.ad4s.core.backprop._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -31,27 +31,33 @@ object Tape {
     (out.v, gradBuilder(grad))
   }
 
-  def evalGrads[T](bv: Bv[T], t: Tape)(backprop: Ones[T]): Grad = {
+  def evalGrads[T](bv: d[T], t: Tape)(backprop: Ones[T]): Grad = {
     val derivs = t.nodes2.map(_.zero) // this may be wrong
-    derivs(bv.i) = backprop.ones(bv.v)
-    for (j <- t.reverse(bv.i)) {
-      val deriv = derivs(j)
-      t.nodes2(j) match {
-        case _: Node0[Any]@unchecked => /*do nothing*/
-        case n1: Node1[Any, Any]@unchecked =>
-          val w = n1.grad(deriv)
-          derivs(n1.inp1.i) = n1.inp1.sum.add(derivs(n1.inp1.i), w)
-        case n2: Node2[Any, Any, Any]@unchecked =>
-          val (w1, w2) = n2.grad(deriv)
-          derivs(n2.inp1.i) = n2.inp1.sum.add(derivs(n2.inp1.i), w1)
-          derivs(n2.inp2.i) = n2.inp2.sum.add(derivs(n2.inp2.i), w2)
+    if (bv.i == DConst) Grad(derivs.toVector)
+    else {
+      val DRef(di, _) = bv.i
+      derivs(di) = backprop.ones(bv.v)
+      for (j <- t.reverse(di)) {
+        val deriv = derivs(j)
+        t.nodes2(j) match {
+          case _: Node0[Any]@unchecked => /*do nothing*/
+          case n1: Node1[Any, Any]@unchecked =>
+            val w = n1.grad(deriv)
+            derivs(n1.inp1.i) = n1.inp1.sum.add(derivs(n1.inp1.i), w)
+          case n2: Node2[Any, Any, Any]@unchecked =>
+            val (w1, w2) = n2.grad(deriv)
+            derivs(n2.inp1.i) = n2.inp1.sum.add(derivs(n2.inp1.i), w1)
+            derivs(n2.inp2.i) = n2.inp2.sum.add(derivs(n2.inp2.i), w2)
+        }
       }
+      Grad(derivs.toVector)
     }
-    Grad(derivs.toVector)
   }
 }
 
-case class InpRef[T](i: Int, sum: Sum[T]) /* sum type might need extension */
+case class InpRef[T](i: Int, sum: Sum[T])
+
+/* sum type might need extension */
 
 sealed trait TapeNode[Z] {
   def zero: Z

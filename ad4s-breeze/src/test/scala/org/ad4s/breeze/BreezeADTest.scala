@@ -3,11 +3,11 @@ package org.ad4s.breeze
 import breeze.linalg
 import breeze.linalg.DenseMatrix
 import org.ad4s.breeze.DenseMatrixOps.ops._
-import org.ad4s.core.backprop.Bv
 import org.ad4s.core.backprop.BvMaths.ops._
+import org.ad4s.core.backprop.d
 import org.ad4s.core.numeric.NumericOps.ops.backpropFromFractional
+import org.ad4s.core.tape.Tape
 import org.ad4s.core.tape.TapeEvaluatorMagnet.Implicits._
-import org.ad4s.core.tape.{BackpropContext, Tape}
 import org.scalacheck.Prop.BooleanOperators
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.FlatSpec
@@ -41,7 +41,7 @@ class BreezeADTest extends FlatSpec with Checkers {
   "z=x+y" should "return (dx/dz, dy/dz) as (1, 1)" in {
     implicit val denseMatrixDoubleMulArb: Arbitrary[(DenseMatrix[Double], DenseMatrix[Double])] = Arbitrary(gen)
     check { pair: (DenseMatrix[Double], DenseMatrix[Double]) =>
-      val f = (x: Bv[DenseMatrix[Double]], y: Bv[DenseMatrix[Double]]) => { implicit BC: BackpropContext =>
+      val f = (x: d[DenseMatrix[Double]], y: d[DenseMatrix[Double]]) => {
         x + y
       }
 
@@ -55,7 +55,7 @@ class BreezeADTest extends FlatSpec with Checkers {
   "z=x*y" should "return (dx/dz, dy/dz) as (y, z) for " in {
     implicit val denseMatrixDoubleMulArb: Arbitrary[(DenseMatrix[Double], DenseMatrix[Double])] = Arbitrary(genMul)
     check { pair: (DenseMatrix[Double], DenseMatrix[Double]) =>
-      val f = (x: Bv[DenseMatrix[Double]], y: Bv[DenseMatrix[Double]]) => { implicit BC: BackpropContext =>
+      val f = (x: d[DenseMatrix[Double]], y: d[DenseMatrix[Double]]) => {
         x * y
       }
       val (a, b) = pair
@@ -72,7 +72,7 @@ class BreezeADTest extends FlatSpec with Checkers {
     implicit val squareMatrixArb: Arbitrary[DenseMatrix[Double]] = Arbitrary(squares)
     check { m: DenseMatrix[Double] =>
 
-      val f: Bv[DenseMatrix[Double]] => BackpropContext => Bv[Double] = (x: Bv[DenseMatrix[Double]]) => { implicit BC: BackpropContext =>
+      val f = (x: d[DenseMatrix[Double]]) => {
         det[DenseMatrix[Double], Double](x)
       }
 

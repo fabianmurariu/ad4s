@@ -3,7 +3,7 @@ package org.ad4s.core.tape
 import org.scalatest.FlatSpec
 import org.scalatest.check.Checkers
 import TapeEvaluatorMagnet.Implicits._
-import org.ad4s.core.backprop.Bv
+import org.ad4s.core.backprop.d
 import org.scalacheck.Prop.BooleanOperators
 
 import spire.implicits._
@@ -13,7 +13,7 @@ import org.ad4s.core.numeric.NumericOps.ops._
 class NumericsADTest extends FlatSpec with Checkers {
 
   "Backprop" should "return (dx/dz, dy/dz) as (1, 1) for z=x+y " in check { (a: Double, b: Double) =>
-    val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext =>
+    val f = (x: d[Double], y: d[Double]) => {
       x + y
     }
 
@@ -23,7 +23,7 @@ class NumericsADTest extends FlatSpec with Checkers {
   }
 
   it should "return (dx/dz, dy/dz) as (1, 1) for z=x-y" in check { (a: Double, b: Double) =>
-    val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext =>
+    val f = (x: d[Double], y: d[Double]) => {
       x - y
     }
 
@@ -33,7 +33,7 @@ class NumericsADTest extends FlatSpec with Checkers {
   }
 
   it should "return (dx/dz, dy/dz) as (y, x)" in check { (a: Double, b: Double) =>
-    val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext =>
+    val f = (x: d[Double], y: d[Double]) => {
       x * y
     }
 
@@ -45,7 +45,7 @@ class NumericsADTest extends FlatSpec with Checkers {
   it should "return dx/dz as correct derivative for sigmoid(x)" in check {
     x: Double =>
       (Math.abs(x) < 100) ==> {
-        val f = (x: Bv[Double]) => { implicit BC: BackpropContext =>
+        val f = (x: d[Double]) => {
           sigmoid(x)
         }
 
@@ -58,7 +58,7 @@ class NumericsADTest extends FlatSpec with Checkers {
 
   it should "return dx/dz as cos(x)" in check {
     x: Double =>
-      val f = (x: Bv[Double]) => { implicit BC: BackpropContext =>
+      val f = (x: d[Double]) => {
         sin(x)
       }
 
@@ -71,8 +71,8 @@ class NumericsADTest extends FlatSpec with Checkers {
   it should "return dx/dz as y*x**y-1m dy/dz as x**y*log(x)" in check {
     (a: Double, b: Double) =>
       (a > 0) ==> {
-        val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext =>
-          x**y
+        val f = (x: d[Double], y: d[Double]) => {
+          x ** y
         }
 
         val (z, (dx, dy)) = Tape.runGrads(f)((a, b))
@@ -86,7 +86,7 @@ class NumericsADTest extends FlatSpec with Checkers {
   it should "return dx/dz as exp(x)" in check {
     x: Double =>
 
-      val f = (x: Bv[Double]) => { implicit BC: BackpropContext =>
+      val f = (x: d[Double]) => {
         exp(x)
       }
 
@@ -99,7 +99,7 @@ class NumericsADTest extends FlatSpec with Checkers {
 
   it should "return dx/dz as y+cos(x) and dy/dz as x" in check {
     (a: Double, b: Double) =>
-      val f = (x: Bv[Double], y: Bv[Double]) => { implicit BC: BackpropContext =>
+      val f = (x: d[Double], y: d[Double]) => {
         (x * y) + sin(x)
       }
       val (z, (dx, dy)) = Tape.runGrads(f)((a, b))
@@ -111,7 +111,7 @@ class NumericsADTest extends FlatSpec with Checkers {
 
   it should "return 1, 1, 1, 1 as dxs for sum" in check {
     (a: Double, b: Double, c: Double, d: Double) =>
-      val f = (x: Bv[Double], y: Bv[Double], u: Bv[Double], v: Bv[Double]) => { implicit BC: BackpropContext =>
+      val f = (x: d[Double], y: d[Double], u: d[Double], v: d[Double]) => {
         x + y + u + v
       }
       val (z, dxs) = Tape.runGrads(f)((a, b, c, d))
