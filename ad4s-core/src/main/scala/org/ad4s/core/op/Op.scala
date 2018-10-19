@@ -93,4 +93,7 @@ object Ops {
 
   trait Det[A, Z] extends Op1[A, Z]
 
+  trait Max[A, Z] extends Op1[A, Z]
+
+  trait Min[A, Z] extends Op1[A, Z]
 }

@@ -23,7 +23,7 @@ private[tape] class Tape {
 object Tape {
 
   def runGrads[X, Z](m: TapeEvaluatorMagnet[X, Z])
-                    (x: X)(implicit B: Backprop[Z]): (Z, m.Grads) = {
+                    (x: X)(implicit B: Backprop[Z]): (Z, X) = {
     implicit val BC: BackpropContext = new BackpropContext(new Tape)
 
     val (out, gradBuilder) = m.eval(x)

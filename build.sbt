@@ -10,6 +10,7 @@ lazy val commonsSettings = Seq(
     "-unchecked", // warn about unchecked type parameters
     "-feature", // warn about misused language features
     "-language:higherKinds", // allow higher kinded types without `import scala.language.higherKinds`
+    "-language:implicitConversions",
     "-Xlint", // enable handy linter warnings
     //  "-Xfatal-warnings",     // turn compiler warnings into errors
     "-Ypartial-unification" // allow the compiler to unify type constructors of different arities
@@ -20,7 +21,8 @@ lazy val commonsSettings = Seq(
     "com.chuusai" %% "shapeless" % "2.3.3",
     "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % Test,
     "org.scalacheck" %% "scalacheck" % "1.14.0" % Test),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
 )
 lazy val core = (project in file("ad4s-core"))
   .settings(commonsSettings)
@@ -48,7 +50,7 @@ lazy val net = (project in file("ad4s-net"))
     name := "ad4s-net",
     libraryDependencies ++= Seq(
     )
-  ).dependsOn(core)
+  ).dependsOn(core, breeze)
 
 lazy val root = (project in file("."))
   .settings(commonsSettings)

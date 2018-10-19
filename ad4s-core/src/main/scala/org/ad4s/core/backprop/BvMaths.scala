@@ -51,6 +51,13 @@ trait BvMaths {
                            (implicit OP: Det[A, B]): d[B] =
     Op.liftOp1(a)(OP).unsafeRunSync()
 
+  def max[A: Sum, B: Zeros](a: d[A])
+                           (implicit OP: Max[A, B]): d[B] =
+    Op.liftOp1(a)(OP).unsafeRunSync()
+
+  def const[A: Zeros](a: A): d[A] = {
+    d.const(a)
+  }
 }
 
 object BvMaths {
@@ -58,8 +65,8 @@ object BvMaths {
   object ops extends BvMaths {
 
     implicit class BvOps[A](val a: d[A]) extends AnyVal {
-      def +(b: d[A])(implicit P: Plus[A, A, A],
-                     Bp: Backprop[A]): d[A] = {
+      def +[B: Sum, C](b: d[B])(implicit P: Plus[A, B, C],
+                                Bp: Backprop[C], SumA: Sum[A]): d[C] = {
         plus(a, b).unsafeRunSync()
       }
 
@@ -73,13 +80,13 @@ object BvMaths {
         times(a, b).unsafeRunSync()
       }
 
-      def /(b: d[A])(implicit P: Div[A, A, A],
-                     Bp: Backprop[A]): d[A] = {
+      def /[B: Sum, C: Zeros](b: d[B])(implicit P: Div[A, B, C],
+                                       Bp: Backprop[C], SumA:Sum[A]): d[C] = {
         div(a, b).unsafeRunSync()
       }
 
-      def **(b: d[A])(implicit P: Pow[A, A, A],
-                      Bp: Backprop[A]): d[A] = {
+      def **[B](b: d[B])(implicit P: Pow[A, B, A],
+                         Bp: Backprop[A], S: Sum[B]): d[A] = {
         pow(a, b).unsafeRunSync()
       }
     }

@@ -1,11 +1,12 @@
 package org.ad4s.breeze
 
-import breeze.linalg.{DenseMatrix, det, inv}
+import breeze.linalg.{DenseMatrix, det, inv, max, sum}
+import breeze.numerics._
 import org.ad4s.core.backprop.Backprop
 import org.ad4s.core.op.Ops._
-import breeze.numerics._
 
 trait LowPriorityDenseMatrixOps {
+
 
   /* WIP */
   object ops {
@@ -16,9 +17,22 @@ trait LowPriorityDenseMatrixOps {
         (a + b, { z => (z, z) })
     }
 
+    implicit val minusOp: Minus[Matrix, Matrix, Matrix] = new Minus[Matrix, Matrix, Matrix] {
+      override def apply(a: Matrix, b: Matrix): (Matrix, Matrix => (Matrix, Matrix)) =
+        (a + b, { z => (z, -z) })
+    }
+
     implicit val timesOp: Times[Matrix, Matrix, Matrix] = new Times[Matrix, Matrix, Matrix] {
       override def apply(a: Matrix, b: Matrix): (Matrix, Matrix => (Matrix, Matrix)) =
         (a * b, { z => (z * b.t, a.t * z) })
+    }
+
+    implicit val divOp: Div[Matrix, Double, Matrix] = new Div[Matrix, Double, Matrix] {
+      override def apply(a: Matrix, b: Double): (Matrix, Matrix => (Matrix, Double)) =
+        (a / b, { z => 
+          val db = sum(z *:* ((-1 / Math.pow(b, 2)) * a))
+          (z / b, db)
+        })
     }
 
     implicit val expOps: Exp[Matrix, Matrix] = new Exp[Matrix, Matrix] {
@@ -37,10 +51,20 @@ trait LowPriorityDenseMatrixOps {
       }
     }
 
-    implicit val detOps:Det[Matrix, Double] = new Det[Matrix, Double] {
+    implicit val detOps: Det[Matrix, Double] = new Det[Matrix, Double] {
       override def apply(v1: Matrix): (Double, Double => Matrix) = {
         val d = det(v1)
-        (d, g  => (g * d) * inv(v1).t)
+        (d, g => (g * d) * inv(v1).t)
+      }
+    }
+
+    implicit val maxOps: Max[Matrix, Double] = new Max[Matrix, Double] {
+      override def apply(v1: Matrix): (Double, Double => Matrix) = {
+        val m = max(v1)
+        (m, g => {
+          val dm = (DenseMatrix.fill(v1.rows, v1.cols)(m) :== v1).map(b => if (b) 1.0 else 0.0)
+          g * dm
+        })
       }
     }
 
