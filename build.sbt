@@ -18,8 +18,11 @@ lazy val commonsSettings = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % "1.2.0",
     "com.chuusai" %% "shapeless" % "2.3.3",
-    "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % Test,
-    "org.scalacheck" %% "scalacheck" % "1.14.0" % Test),
+    "org.scalatest" %% "scalatest" % "3.0.2" % Test,
+    "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+    "org.typelevel" %% "cats-testkit" % "1.1.0" % Test, //or `cats-testkit` if you are using ScalaTest
+    "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.6" % Test
+  ),
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.0")
 )
 lazy val core = (project in file("ad4s-core"))

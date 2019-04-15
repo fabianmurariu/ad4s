@@ -1,18 +1,19 @@
 package org.ad4s.core.tape
 
 import org.scalatest.FlatSpec
-import org.scalatest.check.Checkers
+import org.scalatest.prop.Checkers
 import TapeEvaluatorMagnet.Implicits._
 import org.ad4s.core.backprop.d
 import org.scalacheck.Prop.BooleanOperators
 
 import spire.implicits._
+import org.ad4s.core.backprop.Backprop.implicits._
 import org.ad4s.core.backprop.BvMaths.ops._
 import org.ad4s.core.numeric.NumericOps.ops._
 
 class NumericsADTest extends FlatSpec with Checkers {
 
-  "Backprop" should "return (dx/dz, dy/dz) as (1, 1) for z=x+y " in check { (a: Double, b: Double) =>
+  "Tape.runGrads" should "return (dx/dz, dy/dz) as (1, 1) for z=x+y " in check { (a: Double, b: Double) =>
     val f = (x: d[Double], y: d[Double]) => {
       x + y
     }

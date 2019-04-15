@@ -3,6 +3,7 @@ package org.ad4s.net
 import org.ad4s.core.backprop.d
 import org.ad4s.core.tape.Tape
 import org.scalatest.{FlatSpec, Matchers}
+import org.ad4s.core.backprop.Backprop.implicits._
 
 class NetSpec extends FlatSpec with Matchers {
 

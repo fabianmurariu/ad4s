@@ -7,7 +7,7 @@ import org.ad4s.core.backprop.BvMaths.ops._
 import org.ad4s.core.backprop.{Backprop, d}
 import org.ad4s.core.op.Ops._
 import org.ad4s.breeze.DenseMatrixOps.ops._
-import org.ad4s.core.numeric.NumericOps.ops.backpropFromFractional
+import Backprop.implicits._
 
 /**
   * Experimental implementation of a few models driven by

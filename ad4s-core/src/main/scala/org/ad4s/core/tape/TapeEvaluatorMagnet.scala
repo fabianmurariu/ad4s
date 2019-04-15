@@ -1,6 +1,6 @@
 package org.ad4s.core.tape
 
-import org.ad4s.core.backprop.{Backprop, DRef, Zeros, d}
+import org.ad4s.core.backprop.{Backprop, Zeros, d}
 
 import scala.language.implicitConversions
 
