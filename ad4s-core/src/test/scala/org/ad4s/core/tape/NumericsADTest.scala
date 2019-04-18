@@ -7,7 +7,7 @@ import org.ad4s.core.backprop.d
 import org.scalacheck.Prop.BooleanOperators
 
 import spire.implicits._
-import org.ad4s.core.backprop.Backprop.implicits._
+import org.ad4s.core.backprop.Backprop.implicits.backpropFromFractional
 import org.ad4s.core.backprop.BvMaths.ops._
 import org.ad4s.core.numeric.NumericOps.ops._
 

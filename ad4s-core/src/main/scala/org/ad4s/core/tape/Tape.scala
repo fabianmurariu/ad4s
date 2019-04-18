@@ -1,8 +1,11 @@
 package org.ad4s.core.tape
 
+import cats.{Eval, Foldable, Monad}
 import cats.effect.IO
+import cats.effect.concurrent
 import org.ad4s.core.backprop._
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 private[tape] class Tape {
@@ -10,7 +13,7 @@ private[tape] class Tape {
 
   def len: Int = nodes2.length
 
-  def reverse(n: Int = this.len): Seq[Int] = n to 0 by -1
+  def reverse(n: Int = this.len): IndexedSeq[Int] = (n to 0 by -1)
 
   private[tape] def insert0(tn: TapeNode[_ <: Any]): IO[Int] = IO {
     val n = len
@@ -22,6 +25,17 @@ private[tape] class Tape {
 
 object Tape {
 
+  implicit def indexedSeqIsFoldable[T]: Foldable[IndexedSeq] = new Foldable[IndexedSeq] {
+    override def foldLeft[A, B](fa: IndexedSeq[A], b: B)(f: (B, A) => B): B = fa.foldLeft(b)(f)
+
+    override def foldRight[A, B](fa: IndexedSeq[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = {
+      def loop(i: Int): Eval[B] =
+        if (i < fa.length) f(fa(i), Eval.defer(loop(i + 1))) else lb
+
+      Eval.defer(loop(0))
+    }
+  }
+
   def runGrads[X, Z](m: TapeEvaluatorMagnet[X, Z])
                     (x: X)(implicit B: Backprop[Z]): (Z, X) = {
     implicit val BC: BackpropContext = new BackpropContext(new Tape)
@@ -29,6 +43,40 @@ object Tape {
     val (out, gradBuilder) = m.eval(x)
     val grad = evalGrads(out, BC.tape)(B)
     (out.v, gradBuilder(grad))
+  }
+
+  def evalGrads2[T](bv: d[T], t: Tape): IO[Grad] = {
+
+    if (bv.i == DConst) IO.pure(Grad(t.nodes2.map(_.zero).toVector))
+    else {
+      import cats.implicits._
+      val DRef(di, _) = bv.i
+
+      for {
+        derivsRef <- concurrent.Ref.of[IO, mutable.Seq[Any]](t.nodes2.map(_.zero))
+        emptyGrads <- derivsRef.get
+        grads <- t.reverse(di).foldM[IO, mutable.Seq[Any]](emptyGrads) {
+          (derivs: mutable.Seq[Any], j) =>
+            IO {
+              val deriv = derivs(j)
+              t.nodes2(j) match {
+                case _: Node0[Any]@unchecked =>
+                  derivs
+                case n1: Node1[Any, Any]@unchecked =>
+                  val w = n1.grad(deriv)
+                  derivs(n1.inp1.i) = n1.inp1.sum.add(derivs(n1.inp1.i), w)
+                  derivs
+                case n2: Node2[Any, Any, Any]@unchecked =>
+                  val (w1, w2) = n2.grad(deriv)
+                  derivs(n2.inp1.i) = n2.inp1.sum.add(derivs(n2.inp1.i), w1)
+                  derivs(n2.inp2.i) = n2.inp2.sum.add(derivs(n2.inp2.i), w2)
+                  derivs
+              }
+            }
+        }
+      } yield Grad(grads.toVector)
+
+    }
   }
 
   def evalGrads[T](bv: d[T], t: Tape)(backprop: Ones[T]): Grad = {
@@ -74,18 +122,4 @@ case class Grad(dxs: Vector[Any])
 class BackpropContext(private[core] val tape: Tape = new Tape) {
   private[core] def insertNode[T](tn: TapeNode[T]): IO[Int] =
     tape.insert0(tn)
-}
-
-object BackpropContext {
-
-  object Implicits {
-    implicit def backpropFromNumeric[T](implicit N: Fractional[T]): Backprop[T] = new Backprop[T] {
-      override def ones(a: T): T = N.one
-
-      override def add(a1: T, a2: T): T = N.plus(a1, a2)
-
-      override def zeros(a: T): T = N.zero
-    }
-  }
-
 }

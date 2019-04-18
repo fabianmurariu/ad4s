@@ -16,17 +16,29 @@ trait Sum[A] {
 
 object Backprop {
 
-  object implicits {
+  import spire.implicits._
+  object implicits extends NumericInstances with FractionalInstances
 
-    import spire.implicits._
-    import spire.math.Fractional
+  trait NumericInstances {
 
-    implicit def backpropFromFractional[T: Fractional]: Backprop[T] = new Backprop[T] {
+    implicit def backpropFromNumeric[T: spire.math.Numeric]: Backprop[T] = new Backprop[T] {
+      override def add(a1: T, a2: T): T = a1 + a2
+
+      override def ones(a: T): T = 1
+
+      override def zeros(a: T): T = 0
+    }
+  }
+
+  trait FractionalInstances {
+    implicit def backpropFromFractional[T: spire.math.Fractional]: Backprop[T] = new Backprop[T] {
       override def zeros(a: T): T = 0
 
       override def add(a1: T, a2: T): T = a1 + a2
 
       override def ones(a: T): T = 1
     }
+
   }
+
 }

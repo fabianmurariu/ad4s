@@ -5,9 +5,8 @@ import cats._
 import cats.implicits._
 import org.ad4s.core.backprop.BvMaths.ops._
 import org.ad4s.core.backprop.{Backprop, d}
-import org.ad4s.core.op.Ops._
 import org.ad4s.breeze.DenseMatrixOps.ops._
-import Backprop.implicits._
+import Backprop.implicits.backpropFromFractional
 
 /**
   * Experimental implementation of a few models driven by

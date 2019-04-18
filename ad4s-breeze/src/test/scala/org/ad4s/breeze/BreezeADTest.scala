@@ -5,7 +5,7 @@ import breeze.linalg.{DenseMatrix, sum}
 import org.ad4s.breeze.DenseMatrixOps.ops._
 import org.ad4s.core.backprop.BvMaths.ops._
 import org.ad4s.core.backprop.d
-import org.ad4s.core.backprop.Backprop.implicits._
+import org.ad4s.core.backprop.Backprop.implicits.backpropFromFractional
 import org.ad4s.core.tape.Tape
 import org.ad4s.core.tape.TapeEvaluatorMagnet.Implicits._
 import org.scalacheck.Prop.BooleanOperators
