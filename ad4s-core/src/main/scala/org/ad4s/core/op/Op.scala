@@ -28,7 +28,7 @@ object Op {
 
   @inline
   def liftOp2[A1, A2, Z](a: d[A1], b: d[A2])(op: Op2[A1, A2, Z])
-                        (implicit Z: Zeros[Z], Sum1:Sum[A1], Sum2:Sum[A2]): IO[d[Z]] =
+                        (implicit Z: Zeros[Z], Sum1: Sum[A1], Sum2: Sum[A2]): IO[d[Z]] =
     (a.i, b.i) match {
       case (DConst, DConst) => IO.pure(op(a.v, b.v)._1).map(d(DConst, _))
       case (DConst, DRef(i, bc)) =>
@@ -96,4 +96,5 @@ object Ops {
   trait Max[A, Z] extends Op1[A, Z]
 
   trait Min[A, Z] extends Op1[A, Z]
+
 }
