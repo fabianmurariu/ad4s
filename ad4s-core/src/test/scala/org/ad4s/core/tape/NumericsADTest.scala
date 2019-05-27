@@ -6,10 +6,10 @@ import TapeEvaluatorMagnet.Implicits._
 import org.ad4s.core.backprop.d
 import org.scalacheck.Prop.BooleanOperators
 
+import spire.math.{sin, exp}
 import spire.implicits._
 import org.ad4s.core.backprop.Backprop.implicits._
-import org.ad4s.core.backprop.BvMaths.ops._
-import org.ad4s.core.numeric.NumericOps.ops._
+import org.ad4s.core.numeric.NumericOps.Syntax._
 
 class NumericsADTest extends FlatSpec with Checkers {
 

@@ -6,11 +6,16 @@ import org.ad4s.core.tape._
 
 sealed trait Op
 
-trait Op1[A, Z] extends (A => (Z, Z => A))
+trait Op1[A, Z] extends (A => (Z, Z => A)) with Op
 
-trait Op2[A, B, Z] extends ((A, B) => (Z, Z => (A, B)))
+trait Op2[A, B, Z] extends ((A, B) => (Z, Z => (A, B))) with Op
 
 object Op {
+
+  @inline
+  def op1[A, Z](f: A => (Z, Z => A)): Op1[A, Z] = (a: A) => f(a)
+  @inline
+  def op2[A, B, Z](f: (A, B) => (Z, Z => (A, B))): Op2[A, B, Z] = (a: A, b: B) => f(a, b)
 
   def liftOp1[A1, Z](a: d[A1])(op: Op1[A1, Z])
                     (implicit Z: Zeros[Z], Sum: Sum[A1]): IO[d[Z]] = a.i match {
@@ -63,38 +68,4 @@ object Op {
           ))
         } yield d(DRef(k, bc), z)
     }
-}
-
-object Ops {
-
-  trait Plus[A, B, Z] extends Op2[A, B, Z]
-
-  trait Minus[A, B, Z] extends Op2[A, B, Z]
-
-  trait Times[A, B, Z] extends Op2[A, B, Z]
-
-  trait Div[A, B, Z] extends Op2[A, B, Z]
-
-  trait Sin[A, Z] extends Op1[A, Z]
-
-  trait Cos[A, Z] extends Op1[A, Z]
-
-  trait Sigmoid[A, Z] extends Op1[A, Z]
-
-  trait Relu[A, Z] extends Op1[A, Z]
-
-  trait Softmax[A, Z] extends Op2[A, Int, Z] // wants dimension for softmax
-
-  trait Log[A, Z] extends Op1[A, Z]
-
-  trait Exp[A, Z] extends Op1[A, Z]
-
-  trait Pow[A, B, Z] extends Op2[A, B, Z]
-
-  trait Det[A, Z] extends Op1[A, Z]
-
-  trait Max[A, Z] extends Op1[A, Z]
-
-  trait Min[A, Z] extends Op1[A, Z]
-
 }

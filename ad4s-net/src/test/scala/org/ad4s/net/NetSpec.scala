@@ -3,14 +3,13 @@ package org.ad4s.net
 import org.ad4s.core.backprop.d
 import org.ad4s.core.tape.Tape
 import org.scalatest.{FlatSpec, Matchers}
+
+import org.ad4s.core.tape.TapeEvaluatorMagnet.Implicits._
+import spire.syntax.fractional._
 import org.ad4s.core.backprop.Backprop.implicits._
+import org.ad4s.core.numeric.NumericOps._
 
 class NetSpec extends FlatSpec with Matchers {
-
-  import org.ad4s.core.backprop.BvMaths.ops._
-  import org.ad4s.core.numeric.NumericOps.ops._
-  import org.ad4s.core.tape.TapeEvaluatorMagnet.Implicits._
-  import spire.implicits._
 
   "Net" should "take any foldable and update the variables via the gradient descent" in {
 
@@ -23,7 +22,7 @@ class NetSpec extends FlatSpec with Matchers {
     val cost = (W: d[Double], b: d[Double], x: d[Double], y: d[Double]) => {
       val pred = (W * x) + b
       // cost
-      (pred - y) ** d.const(2d)
+      pow((pred - y), d.const(2d))
     }
 
     def repeat[T](n: Int, xs: Traversable[T]): Stream[T] = {
