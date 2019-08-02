@@ -2,100 +2,18 @@ package org.ad4s.core.numeric
 
 import org.ad4s.core.backprop.{Backprop, d}
 import org.ad4s.core.op.{Op, Op1, Op2}
-import spire.algebra.{Eq, Field, NRoot, Trig}
-import spire.implicits._
+import spire.algebra.{NRoot, Trig}
 import spire.math
 import spire.math.{Algebraic, ConvertableFrom, ConvertableTo, Fractional, Rational, Real}
 
-trait Math[@specialized(Float, Double) T] {
+abstract class Math[@specialized(Float, Double) T](implicit val F: Fractional[T], T: Trig[T], B: Backprop[T]) {
 
-  implicit def F: Fractional[T]
-
-  implicit def T: Trig[T]
-
-  implicit def N: NRoot[T]
-
-  implicit def B: Backprop[T]
-
-  object ops {
-    def plusOp: Op2[T, T, T] = Op.op2 { (a: T, b: T) => (a + b, { z => (z, z) }) }
-
-    def minusOp: Op2[T, T, T] = Op.op2[T, T, T] { (a: T, b: T) => (a - b, { z => (z, -z) }) }
-
-    def timesOp: Op2[T, T, T] = Op.op2[T, T, T] { (a: T, b: T) => (a * b, { z => (b * z, z * a) }) }
-
-    def divOp: Op2[T, T, T] = Op.op2[T, T, T] { (a: T, b: T) => (a / b, { z => (z / b, (-z * a) / (b * b)) }) }
-
-    def powOp(implicit N: NRoot[T], T: Trig[T]): Op2[T, T, T] = Op.op2[T, T, T] {
-      (a: T, b: T) =>
-        (N.fpow(a, b), { z =>
-          val dx = b * N.fpow(a, b - 1)
-          val dy = N.fpow(a, b * T.log(a))
-          (z * dx, dy * z)
-        })
-    }
-
-
-    def expOp: Op1[T, T] = Op.op1[T, T] { a: T => (T.exp(a), { g => g * T.exp(a) }) }
-
-    def logOp: Op1[T, T] = Op.op1[T, T] { a: T => (T.log(a), { g => g / a }) }
-
-    def sigmoidOp: Op1[T, T] = Op.op1 {
-      a: T =>
-        val z = 1 / (T.exp(-a) + 1)
-        (z, { g =>
-          val ex = T.exp(-a)
-          g * (ex / N.fpow(ex + 1, 2))
-        })
-    }
-
-    def signumOp: Op1[T, T] = (v1: T) => (F.signum(v1), { _ => F.fromInt(0) })
-
-    def negateOp: Op1[T, T] = (v1: T) => (F.negate(v1), F.negate)
-
-    def absOp: Op1[T, T] = (v1: T) => (F.abs(v1), { g => g * F.signum(v1) })
-
-    def ceilOp: Op1[T, T] = (v1: T) => (F.ceil(v1), { _ => F.fromInt(0) })
-
-    def floorOp: Op1[T, T] = (v1: T) => (F.floor(v1), { _ => F.fromInt(0) })
-
-    def roundOp: Op1[T, T] = (v1: T) => (F.round(v1), { _ => F.fromInt(0) })
-
-    // Trig
-    def sinOp: Op1[T, T] = Op.op1[T, T] { a: T => (T.sin(a), { g => g * T.cos(a) }) }
-
-    def cosOp: Op1[T, T] = Op.op1[T, T] { a: T => (T.cos(a), { g => g * (-T.sin(a)) }) }
-
-    def tanOp: Op1[T, T] = Op.op1[T, T] { x => (T.tan(x), { g => g / T.cos(x * x) }) }
-
-    def asinOp: Op1[T, T] = Op.op1 { x => (T.asin(x), { g => g / N.sqrt(1 - (x * x)) }) }
-
-    def acosOp: Op1[T, T] = Op.op1 { x => (T.acos(x), { g => -(g / N.sqrt(1 - (x * x))) }) }
-
-    def atanOp: Op1[T, T] = Op.op1 { x => (T.atan(x), { g => g / (1 + (x * x)) }) }
-
-    def sinhOp: Op1[T, T] = Op.op1 { x => (T.sinh(x), { g => g * T.cosh(x) }) }
-
-    def coshOp: Op1[T, T] = Op.op1 { x => (T.cosh(x), { g => g * T.sinh(x) }) }
-
-    def tanhOp: Op1[T, T] = Op.op1 { x => (T.tanh(x), { g => g / T.cosh(x * x) }) }
-
-    def atan2Op: Op2[T, T, T] = Op.op2 {
-      (y, x) =>
-        val z = T.atan2(y, x)
-        (z, { g: T =>
-          val common = (x * x) + (y * y)
-          val dy = x / common
-          val dx = -y / common
-          (g * dy, g * dx)
-        })
-    }
-  }
+  private val ops = new Ops[T] {}
 
   def sigmoid(x: d[T]): d[T] =
     Op.liftOp1(x)(ops.sigmoidOp).unsafeRunSync()
 
-  class BackpropAlgebra extends Fractional[d[T]] with Trig[d[T]] {
+  class BackpropAlgebra extends Fractional[d[T]] {
 
     override def negate(x: d[T]): d[T] =
       Op.liftOp1(x)(ops.negateOp).unsafeRunSync()
@@ -193,6 +111,10 @@ trait Math[@specialized(Float, Double) T] {
 
     def lcm(a: org.ad4s.core.backprop.d[T], b: org.ad4s.core.backprop.d[T])(implicit ev: spire.algebra.Eq[org.ad4s.core.backprop.d[T]]): org.ad4s.core.backprop.d[T] = ???
 
+  }
+
+  implicit def backpropTrig(implicit DF: Fractional[d[T]]): Trig[d[T]] = new Trig[d[T]] {
+
     override def e: d[T] = d.const(T.e)
 
     override def pi: d[T] = d.const(T.pi)
@@ -237,15 +159,19 @@ trait Math[@specialized(Float, Double) T] {
     override def tanh(x: d[T]): d[T] =
       Op.liftOp1(x)(ops.tanhOp).unsafeRunSync()
 
-    override def toRadians(a: d[T]): d[T] = ???
+    override def toRadians(a: d[T]): d[T] = DF.div(DF.times(a,pi), DF.fromInt(180))
 
-    override def toDegrees(a: d[T]): d[T] = ???
+    override def toDegrees(a: d[T]): d[T] = DF.times(a, DF.div(DF.fromInt(180), pi))
 
-    override def gcd(a: d[T], b: d[T]): d[T] = ???
   }
 
-  implicit def backpropAlgebra(implicit F: math.Fractional[T], T: Trig[T]): Fractional[d[T]] with Trig[d[T]] with Eq[d[T]] = new BackpropAlgebra()
+  implicit val backpropMaths: Fractional[d[T]] = new BackpropAlgebra
 
 }
 
-object NumericOps extends Math
+import spire.implicits._
+
+object DoubleMath extends Math[Double]
+
+object FloatMath extends Math[Float]
+

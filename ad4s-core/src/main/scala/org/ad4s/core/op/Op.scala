@@ -12,6 +12,9 @@ trait Op2[A, B, Z] extends ((A, B) => (Z, Z => (A, B))) with Op
 
 object Op {
 
+  type AOp1[A] = Op1[A, A]
+  type AOp2[A] = Op2[A, A, A]
+
   @inline
   def op1[A, Z](f: A => (Z, Z => A)): Op1[A, Z] = (a: A) => f(a)
   @inline

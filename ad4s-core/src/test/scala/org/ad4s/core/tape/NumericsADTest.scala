@@ -2,16 +2,17 @@ package org.ad4s.core.tape
 
 import org.scalatest.FlatSpec
 import org.scalatest.prop.Checkers
-import TapeEvaluatorMagnet.Implicits._
 import org.ad4s.core.backprop.d
 import org.scalacheck.Prop.BooleanOperators
 
 import spire.math.{sin, exp}
 import spire.implicits._
-import org.ad4s.core.backprop.Backprop.implicits._
-import org.ad4s.core.numeric.NumericOps.Syntax._
+import org.ad4s.core.numeric.DoubleMath._
+import org.ad4s.core.numeric.Algebra
 
 class NumericsADTest extends FlatSpec with Checkers {
+
+  val x = implicitly[spire.math.Fractional[Double]]
 
   "Tape.runGrads" should "return (dx/dz, dy/dz) as (1, 1) for z=x+y " in check { (a: Double, b: Double) =>
     val f = (x: d[Double], y: d[Double]) => {
@@ -73,7 +74,7 @@ class NumericsADTest extends FlatSpec with Checkers {
     (a: Double, b: Double) =>
       (a > 0) ==> {
         val f = (x: d[Double], y: d[Double]) => {
-          x ** y
+          Algebra.pow(x,y)
         }
 
         val (z, (dx, dy)) = Tape.runGrads(f)((a, b))
